@@ -1,7 +1,7 @@
-#include <IRremote.h
+#include <IRremote.h>
 
 const int receive_pin=2;
-IRrecv irrecv(recieve_pin);
+IRrecv irrecv(receive_pin);
 decode_results results;
 
 void setup() {
