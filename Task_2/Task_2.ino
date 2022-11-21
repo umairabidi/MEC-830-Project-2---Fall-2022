@@ -10,7 +10,7 @@
 
 
 #define wheel_radius 27		// mm
-#define wheelbase 140.1		// mm
+#define wheelbase 130		// mm
 #define STATE1_STRAIGHT_FORWARD		10
 #define STATE2_TURN_RIGHT			11
 #define STATE3_STRAIGHT_RIGHT		12
@@ -90,7 +90,7 @@ void loop() {
 }
 
 long req_steps(long distance){
-	return (1.0/wheel_radius)*(63.68395062)*(16)*(1/3.1415926535)*distance;
+	return (1.0/wheel_radius)*(32*22*26*31/8910.0)*(16)*(1/3.1415926535)*distance;
 //	return (distance * 12.01258);
 }
 void rotate(double angle){
