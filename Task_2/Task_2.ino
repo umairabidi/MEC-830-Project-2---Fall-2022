@@ -92,6 +92,7 @@ void loop() {
 long req_steps(long distance){
 	return (1.0/wheel_radius)*(32*22*26*31/8910.0)*(16)*(1/3.1415926535)*distance;
 //	return (distance * 12.01258);
+	// Fix this later
 }
 void rotate(double angle){
 	long req = req_steps(angle*(wheelbase/2.0)*(3.1415926535/180));
