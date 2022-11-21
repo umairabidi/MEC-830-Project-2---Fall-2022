@@ -4,6 +4,7 @@
 
 #include <AccelStepper.h>
 #include <IRremote.h>
+#include <Stepper.h>
 
 #define FULLSTEP 4
 #define FORWARD				0xFF629D
@@ -16,6 +17,8 @@
 
 AccelStepper stp_R(FULLSTEP, A0, A2, A1, A3);
 AccelStepper stp_L(FULLSTEP, 7, 9, 8, 10);
+Stepper stp_R2(2038, A0, A2, A1, A3);
+Stepper stp_L2(2038, 7, 9, 8, 10);
 
 int state = 0;
 
@@ -30,14 +33,10 @@ void rotate(double angle);
 unsigned long prevTime = 0;
 
 void setup() {
-	stp_R.setMaxSpeed(2000);
-	stp_R.setAcceleration(200);
-	
-	stp_L.setMaxSpeed(2000);
-	stp_L.setAcceleration(200);
 
-	stp_L.setSpeed(2000);
-	stp_R.setSpeed(2000);
+
+	stp_L2.setSpeed(10);
+	stp_R2.setSpeed(10);
 	
 	irrecv.enableIRIn();
 	Serial.begin(9600);
@@ -54,12 +53,16 @@ void loop() {
 
 	switch (IR_Button){
 		case FORWARD:
-			stp_L.moveTo(-100);
-			stp_R.moveTo(100);
+			for (int i=0; i<150; i++){
+				stp_L2.step(-1);
+				stp_R2.step(1);
+			}
 			break;
 		case BACKWARDS:
-			stp_L.moveTo(100);
-			stp_R.moveTo(-100);
+			for (int i=0; i<150; i++){
+				stp_L2.step(1);
+				stp_R2.step(-1);
+			}
 			break;
 		case CLOCKWISE:
 			rotate(-5);
@@ -70,15 +73,7 @@ void loop() {
 	}
 	IR_Button = 0;
 
-	stp_L.runSpeed();
-	stp_R.runSpeed();
-	
-	if ((stp_L.distanceToGo()==0)&&(stp_R.distanceToGo()==0)){
-		stp_L.setCurrentPosition(0);
-		stp_R.setCurrentPosition(0);
-	}
-		
-	if (millis() - prevTime >= 100){
+	if (millis() - prevTime >= 500){
 		Serial.print(stp_L.distanceToGo());
 		Serial.print("\t");
 		Serial.println(stp_L.currentPosition());
@@ -97,6 +92,8 @@ long req_steps(long distance){
 }
 void rotate(double angle){
 	long req = req_steps(angle*(wheelbase/2.0)*(3.1415926535/180));
-	stp_R.moveTo(req);
-	stp_L.moveTo(req);
+	for (int i=0; i<abs(req); i++){
+		stp_L2.step(1*(angle/abs(angle)));
+		stp_R2.step(1*(angle/abs(angle)));
+	}
 }
