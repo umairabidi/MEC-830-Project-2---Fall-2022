@@ -33,11 +33,11 @@ void rotate(int angle);
 unsigned long prevTime = 0;
 
 void setup() {
-	stp_R.setMaxSpeed(600);
-	stp_R.setAcceleration(100);
+	stp_R.setMaxSpeed(700);
+	stp_R.setAcceleration(50);
 	
-	stp_L.setMaxSpeed(600);
-	stp_L.setAcceleration(100);
+	stp_L.setMaxSpeed(700);
+	stp_L.setAcceleration(50);
 	Serial.begin(9600);
 }
 
@@ -62,28 +62,42 @@ void loop() {
 			stp_R.moveTo(req_steps(_6L));
 			break;	
 	}
-	stp_R.run();
 	stp_L.run();
+	stp_R.run();
+	
+	
 
-	if ((!stp_L.distanceToGo())&&(!stp_R.distanceToGo())){
+	if ((stp_L.distanceToGo()==0)&&(stp_R.distanceToGo()==0)){
+		stp_L.setCurrentPosition(0);
+		stp_R.setCurrentPosition(0);
 		state++;
 		if (state == STATE5_STRAIGHT_FORWARD+1){
 			state = STATE1_STRAIGHT_FORWARD;
 		}
+		delay(2000);
 	}
 
-	if (millis() - prevTime >= 500){
+	if (millis() - prevTime >= 200){
 		Serial.println(state);
+		Serial.print(stp_L.distanceToGo());
+		Serial.print("\t");
+		Serial.println(stp_L.currentPosition());
+		
+		Serial.print(stp_R.distanceToGo());
+		Serial.print("\t");
+		Serial.println(stp_R.currentPosition());
 		prevTime = millis();
 	}
 	
 }
 
 long req_steps(long distance){
-	return (1.0/wheel_radius)*(32*22*26*31/8910.0)*(64)*(1/3.1415926535)*distance;
+//	return (1.0/wheel_radius)*(32*22*26*31/8910.0)*(64)*(1/3.1415926535)*distance;
+	return (distance * 12.01258);
 }
 void rotate(int angle){
-	long req = req_steps(angle*(wheelbase/2.0)*(3.1415926535/180));
+//	long req = req_steps(angle*(wheelbase/2.0)*(3.1415926535/180));
+	long req = req_steps(angle*1.1344600);
 	stp_R.moveTo(req);
 	stp_L.moveTo(req);
 }
