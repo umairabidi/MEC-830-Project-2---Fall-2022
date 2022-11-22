@@ -1,13 +1,16 @@
 // Code for Task 1
 // November 20, 2022
-// 
+// Author: Umair Abidi
+// Date of Last Change: November 20 2022
+// Future Changes: Increasing Motor output speed to allow for faster movement of system
+// High Level Code Description: Allows user to control system with remote control via IR mapping. Can turn clockwise, counterclockwise and move up and down
 
 #include <AccelStepper.h>
 #include <IRremote.h>
 #include <Stepper.h>
 
 #define FULLSTEP 4
-#define FORWARD				0xFF629D
+#define FORWARD				0xFF629D // IR Sensor Mapping Codes that correspond to Manual Remote Control
 #define BACKWARDS			0xFFA857
 #define CLOCKWISE			0xFFC23D
 #define COUNTERCLOCKWISE	0xFF22DD
