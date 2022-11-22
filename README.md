@@ -22,3 +22,5 @@ forward/backward action is being performed by volume up/down. Similarly, channel
 
 Ultrasonic sensor is used to avoid obstacles and the number of turns are coded into the Arduino to tell the device to turn by 5 degrees each step. This 
 is being accomplished by reducing the speed of left/right tires while the other one stays the same, hence the device receiving its turn.
+
+The manner in which the distances for autonomous naviation for Task 2 and Task 4 were determined by the length of the design itself, so the total amount of steps that an actuator takes is equal to 6 times the length of the design. 
