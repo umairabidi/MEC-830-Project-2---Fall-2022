@@ -1,5 +1,9 @@
 // Code for Task 2
 // November 20, 2022
+// Author: Umair Abidi
+// Date of Last Change: November 21 2022
+// Future Changes: Integrating all tasks together into one .ino file 
+// High Level Code Description: Allows system to move in a pre-determined fasion. Distance travelled determined by length of the design 
 
 // The robot's dimensions are 165.5 X 161.26 X 96.65 mm
 // Therefore, L = 165.5 mm
