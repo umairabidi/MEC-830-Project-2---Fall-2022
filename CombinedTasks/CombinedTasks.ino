@@ -10,6 +10,7 @@
 #define IR_TWO				0xFF18E7
 #define IR_THREE			0xFF7A85
 #define IR_FOUR				0xFF10EF
+#define POWER_BUTTON		0xFFA25D
 
 #define POWER						9
 
@@ -23,10 +24,12 @@
 #define TASK2_STATE3_STRAIGHT_RIGHT		23
 #define TASK2_STATE4_TURN_LEFT			24
 #define TASK2_STATE5_STRAIGHT_FORWARD	25
+#define TASK2_DONE						26
 
 #define TASK3_STATE1_FORWARD			31
 #define TASK3_STATE2_AVOID				32
 #define TASK3_STATE3_FORWARD			33
+#define TASK3_DONE						34
 
 #define TASK4_STATE1_STRAIGHT_FORWARD	41
 #define TASK4_STATE2_TURN_RIGHT			42
@@ -39,7 +42,7 @@
 
 #define wheel_radius 27			// mm, radius of the driving wheel
 #define wheelbase 137.1			// mm, distance between traction lines
-#define _6L 200					// mm, 6L as defined in the lab manual (6∙165.5 mm)
+#define _6L 500					// mm, 6L as defined in the lab manual (6∙165.5 mm)
 #define DistPerButton  20		// mm, the distance to travel straight for every button press
 #define AnglePerButton 10		// degrees, the angle to rotate about for every button press
 
@@ -58,20 +61,28 @@ IRrecv irrecv(receive_pin);
 decode_results results;
 int IR_Button;
 
+#define yellowLED	4
+#define redLED		3
+
+
+
 long req_steps(long distance);
 long rotate_step(double angle);
 
 void setup() {
 	// For autonomous tasks
 	stp_R.setMaxSpeed(700);
-	stp_R.setAcceleration(50);
+	stp_R.setAcceleration(200);
 	stp_L.setMaxSpeed(700);
-	stp_L.setAcceleration(50);
+	stp_L.setAcceleration(200);
 
 	// For Task 1
 	stp_L2.setSpeed(10);
 	stp_R2.setSpeed(10);
 
+	pinMode(yellowLED, OUTPUT);
+	pinMode(redLED, OUTPUT);
+	
 	irrecv.enableIRIn();
 	Serial.begin(9600);
 }
@@ -87,20 +98,32 @@ void loop(){
         IR_Button = results.value;
     }
 	switch(IR_Button){
+		case POWER_BUTTON:
+			task = POWER;
+			Serial.println("Going to POWER state");
+			break;
 		case IR_ONE:
 			task = TASK1_MANUAL;
+			digitalWrite(yellowLED, LOW);
+			digitalWrite(redLED, HIGH);
 			Serial.println("Going to Task 1");
 			break;
 		case IR_TWO:
 			task = TASK2_AUTO;
+			digitalWrite(yellowLED, LOW);
+			digitalWrite(redLED, HIGH);
 			Serial.println("Going to Task 2");
 			break;
 		case IR_THREE:
 			task = TASK3_OBSTACLE;
+			digitalWrite(yellowLED, LOW);
+			digitalWrite(redLED, HIGH);
 			Serial.println("Going to Task 3");
 			break;
 		case IR_FOUR:
 			task = TASK4_SQUARE;
+			digitalWrite(yellowLED, LOW);
+			digitalWrite(redLED, HIGH);
 			Serial.println("Going to Task 4");
 			break;
 	}
@@ -108,6 +131,14 @@ void loop(){
 	
 	switch(task){
 		case POWER:
+			digitalWrite(redLED, LOW);
+			digitalWrite(yellowLED, HIGH);
+			stp_L.moveTo(0);
+			stp_R.moveTo(0);
+			stp_L.setCurrentPosition(0);
+			stp_R.setCurrentPosition(0);
+			stp_L.disableOutputs();
+			stp_R.disableOutputs();
 			break;		// Have the green LED turn off in this state, and turn on in all other states
 		case TASK1_MANUAL:
 			// Task 1 uses the regular stepper library without implementing acceleration.
@@ -140,26 +171,29 @@ void loop(){
 			break;
 		case TASK2_AUTO:
 			switch (state){
-				case STATE1_STRAIGHT_FORWARD:
+				case TASK2_STATE1_STRAIGHT_FORWARD:
 					stp_L.moveTo(-req_steps(_6L));
 					stp_R.moveTo(req_steps(_6L));
 					break;
-				case STATE2_TURN_RIGHT:
-					stp_L.moveTo(-rotate_steps(-90));
+				case TASK2_STATE2_TURN_RIGHT:
+					stp_L.moveTo(rotate_steps(-90));
 					stp_R.moveTo(rotate_steps(-90));
 					break;
-				case STATE3_STRAIGHT_RIGHT:
+				case TASK2_STATE3_STRAIGHT_RIGHT:
 					stp_L.moveTo(-req_steps(_6L));
 					stp_R.moveTo(req_steps(_6L));
 					break;
-				case STATE4_TURN_LEFT:
-					stp_L.moveTo(-rotate_steps(90));
+				case TASK2_STATE4_TURN_LEFT:
+					stp_L.moveTo(rotate_steps(90));
 					stp_R.moveTo(rotate_steps(90));
 					break;
-				case STATE5_STRAIGHT_FORWARD:
+				case TASK2_STATE5_STRAIGHT_FORWARD:
 					stp_L.moveTo(-req_steps(_6L));
 					stp_R.moveTo(req_steps(_6L));
-					break;	
+					break;
+				case TASK2_DONE:
+					task = POWER;
+					break;
 			}
 			break;
 		case TASK3_OBSTACLE:
@@ -171,7 +205,7 @@ void loop(){
 					stp_R.moveTo(req_steps(_6L));
 					break;
 				case TASK4_STATE2_TURN_RIGHT:
-					stp_L.moveTo(-rotate_steps(-90));
+					stp_L.moveTo(rotate_steps(-90));
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK4_STATE3_STRAIGHT_RIGHT:
@@ -179,7 +213,7 @@ void loop(){
 					stp_R.moveTo(req_steps(_6L));
 					break;
 				case TASK4_STATE4_TURN_RIGHT:
-					stp_L.moveTo(-rotate_steps(-90));
+					stp_L.moveTo(rotate_steps(-90));
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK4_STATE5_STRAIGHT_DOWN:
@@ -187,13 +221,17 @@ void loop(){
 					stp_R.moveTo(req_steps(_6L));
 					break;
 				case TASK4_STATE6_TURN_RIGHT:
-					stp_L.moveTo(-rotate_steps(-90));
+					stp_L.moveTo(rotate_steps(-90));
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK4_STATE7_STRAIGHT_LEFT:
 					stp_L.moveTo(-req_steps(_6L));
 					stp_R.moveTo(req_steps(_6L));
-				case 
+					break;
+				case TASK4_DONE:
+					task = POWER;
+					break;
+			}
 			break;
 	}
 	
