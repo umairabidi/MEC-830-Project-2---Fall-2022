@@ -27,9 +27,11 @@
 #define TASK2_DONE						26
 
 #define TASK3_STATE1_FORWARD			31
-#define TASK3_STATE2_AVOID				32
-#define TASK3_STATE3_FORWARD			33
-#define TASK3_DONE						34
+#define TASK3_STATE2_ROTATE_RIGHT		32
+#define TASK3_STATE3_AVOID				33
+#define TASK3_STATE4_ROTATE_RIGHT		34
+#define TASK3_STATE5_FORWARD			35
+#define TASK3_DONE						36
 
 #define TASK4_STATE1_STRAIGHT_FORWARD	41
 #define TASK4_STATE2_TURN_RIGHT			42
@@ -43,8 +45,12 @@
 #define wheel_radius 27			// mm, radius of the driving wheel
 #define wheelbase 137.1			// mm, distance between traction lines
 #define _6L 500					// mm, 6L as defined in the lab manual (6∙165.5 mm)
-#define DistPerButton  20		// mm, the distance to travel straight for every button press
-#define AnglePerButton 10		// degrees, the angle to rotate about for every button press
+#define DistPerButton	20		// mm, the distance to travel straight for every button press
+#define AnglePerButton	10		// degrees, the angle to rotate about for every button press
+#define AVOID_DISTANCE	25		// mm, minimum distance between car and obstacle
+#define AVOID_RADIUS 	95		// mm, distance between car and center of obstacle as it avoids it
+
+//#define PI 3.1415926535897932384626433832795
 
 #define FULLSTEP 4
 AccelStepper stp_R(FULLSTEP, A0, A2, A1, A3);
@@ -63,18 +69,21 @@ int IR_Button;
 
 #define yellowLED	4
 #define redLED		3
+#define ECHO 		6
+#define TRIG		6
 
 
 
 long req_steps(long distance);
 long rotate_step(double angle);
+double ultrasonic_reading();
 
 void setup() {
 	// For autonomous tasks
-	stp_R.setMaxSpeed(700);
-	stp_R.setAcceleration(200);
-	stp_L.setMaxSpeed(700);
-	stp_L.setAcceleration(200);
+	stp_R.setMaxSpeed(750);
+	stp_R.setAcceleration(250);
+	stp_L.setMaxSpeed(750);
+	stp_L.setAcceleration(250);
 
 	// For Task 1
 	stp_L2.setSpeed(10);
@@ -197,6 +206,32 @@ void loop(){
 			}
 			break;
 		case TASK3_OBSTACLE:
+			switch (state){
+				case TASK3_STATE1_FORWARD:
+					stp_L.moveTo(-req_steps(200));		// 12∙L is the length AB for Task 3
+					stp_R.moveTo(req_steps(200));
+					// Condition to stop and move to next state
+					break;
+				case TASK3_STATE2_ROTATE_RIGHT:
+					stp_L.moveTo(rotate_steps(-90));
+					stp_R.moveTo(rotate_steps(-90));
+					break;
+				case TASK3_STATE3_AVOID:
+					stp_L.moveTo(-req_steps((AVOID_RADIUS-(wheelbase/2))*PI));
+					stp_R.moveTo(req_steps((AVOID_RADIUS+(wheelbase/2))*PI));
+					break;
+				case TASK3_STATE4_ROTATE_RIGHT:
+					stp_L.moveTo(rotate_steps(-90));
+					stp_R.moveTo(rotate_steps(-90));
+					break;
+				case TASK3_STATE5_FORWARD:
+					stp_L.moveTo(-req_steps(2*_6L));		// 12∙L is the length AB for Task 3
+					stp_R.moveTo(req_steps(2*_6L));
+					break;
+				case TASK3_DONE:
+					task = POWER;
+					break;
+			}
 			break;
 		case TASK4_SQUARE:
 			switch(state){
@@ -256,4 +291,11 @@ long req_steps(long distance){
 long rotate_steps(double angle){
 	//long req = req_steps(angle*(wheelbase/2.0)*(3.1415926535/180));
 	return req_steps(angle*wheelbase*0.0087266462);
+}
+
+double ultrasonic_reading(){
+	digitalWrite(TRIG, HIGH);
+	_delay_us(10);
+	digitalWrite(TRIG, LOW);
+	return pulseIn(ECHO, HIGH, 25000)/57.753;
 }
