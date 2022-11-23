@@ -47,8 +47,9 @@
 #define _6L 500					// mm, 6L as defined in the lab manual (6∙165.5 mm)
 #define DistPerButton	20		// mm, the distance to travel straight for every button press
 #define AnglePerButton	10		// degrees, the angle to rotate about for every button press
-#define AVOID_DISTANCE	25		// mm, minimum distance between car and obstacle
-#define AVOID_RADIUS 	95		// mm, distance between car and center of obstacle as it avoids it
+#define OBSTACLE_RADIUS	50
+#define AVOID_DISTANCE	100		// mm, minimum distance between car and obstacle
+#define AVOID_RADIUS 	95		// mm, distance between car's center and center of obstacle as it avoids it
 
 //#define PI 3.1415926535897932384626433832795
 
@@ -102,7 +103,7 @@ long rotate_steps(double angle);	// Returns the number of steps to rotate the ca
 void loop(){
 	if (irrecv.decode(&results)){
         Serial.println(results.value,HEX);
-        Serial.println(results.value);
+        //Serial.println(results.value);
         irrecv.resume(); 
         IR_Button = results.value;
     }
@@ -127,6 +128,12 @@ void loop(){
 			task = TASK3_OBSTACLE;
 			digitalWrite(yellowLED, LOW);
 			digitalWrite(redLED, HIGH);
+			double s1 = PI*(OBSTACLE_RADIUS+AVOID_DISTANCE);
+			double s1 = PI*(OBSTACLE_RADIUS+AVOID_DISTANCE+wheelbase/2);
+			stp_R.setMaxSpeed(750);
+			stp_R.setAcceleration(250);
+			stp_L.setMaxSpeed(750*((s1)/(s2)));
+			stp_L.setAcceleration((750*((s1)/(s2)))/3.0);		// Speed is adjusted so both wheels rotate together.
 			Serial.println("Going to Task 3");
 			break;
 		case IR_FOUR:
@@ -136,7 +143,6 @@ void loop(){
 			Serial.println("Going to Task 4");
 			break;
 	}
-	
 	
 	switch(task){
 		case POWER:
@@ -148,7 +154,11 @@ void loop(){
 			stp_R.setCurrentPosition(0);
 			stp_L.disableOutputs();
 			stp_R.disableOutputs();
-			break;		// Have the green LED turn off in this state, and turn on in all other states
+			stp_R.setMaxSpeed(750);
+			stp_R.setAcceleration(250);
+			stp_L.setMaxSpeed(750);
+			stp_L.setAcceleration(250);
+			break;
 		case TASK1_MANUAL:
 			// Task 1 uses the regular stepper library without implementing acceleration.
 				switch (IR_Button){
@@ -211,6 +221,12 @@ void loop(){
 					stp_L.moveTo(-req_steps(200));		// 12∙L is the length AB for Task 3
 					stp_R.moveTo(req_steps(200));
 					// Condition to stop and move to next state
+					if (ultrasonic_reading() <= AVOID_DISTANCE+wheelbase/2){
+						long currentPos_L = stp_L.currentPosition();
+						long currentPos_R = stp_R.currentPosition();
+						stp_L.moveTo(currentPos_L);
+						stp_R.moveTo(currentPos_R);		// Indicates the final position has been reached
+					}
 					break;
 				case TASK3_STATE2_ROTATE_RIGHT:
 					stp_L.moveTo(rotate_steps(-90));
@@ -225,8 +241,9 @@ void loop(){
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK3_STATE5_FORWARD:
-					stp_L.moveTo(-req_steps(2*_6L));		// 12∙L is the length AB for Task 3
-					stp_R.moveTo(req_steps(2*_6L));
+					// Need to know how many steps were completed in State 1
+					stp_L.moveTo(-req_steps(2*_6L)-currentPos_L);		// 12L is the total length. CP_L is the steps already taken
+					stp_R.moveTo(req_steps(2*_6L)-currentPos_L);
 					break;
 				case TASK3_DONE:
 					task = POWER;
