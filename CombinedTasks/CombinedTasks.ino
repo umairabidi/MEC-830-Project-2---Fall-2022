@@ -44,14 +44,14 @@
 
 #define wheel_radius 27			// mm, radius of the driving wheel
 #define wheelbase 137.1			// mm, distance between traction lines
-#define _6L 500					// mm, 6L as defined in the lab manual (6∙165.5 mm)
+#define _6L 993					// mm, 6L as defined in the lab manual (6∙165.5 mm)
 #define DistPerButton	20		// mm, the distance to travel straight for every button press
 #define AnglePerButton	10		// degrees, the angle to rotate about for every button press
 #define OBSTACLE_RADIUS	50
-#define AVOID_DISTANCE	100		// mm, minimum distance between car and obstacle
+#define AVOID_DISTANCE	180		// mm, minimum distance between car and obstacle
 #define AVOID_RADIUS 	95		// mm, distance between car's center and center of obstacle as it avoids it
-
-//#define PI 3.1415926535897932384626433832795
+#define s1 (OBSTACLE_RADIUS+AVOID_DISTANCE-wheelbase/2)
+#define s2 (OBSTACLE_RADIUS+AVOID_DISTANCE+wheelbase/2)
 
 #define FULLSTEP 4
 AccelStepper stp_R(FULLSTEP, A0, A2, A1, A3);
@@ -60,7 +60,10 @@ Stepper stp_R2(2038, A0, A2, A1, A3);
 Stepper stp_L2(2038, 7, 9, 8, 10);
 
 int state = 0;
-int task = TASK1_MANUAL;		// Initial task
+int task = POWER;		// Initial task
+long currentPos_L;
+long currentPos_R;
+double distance;		//
 unsigned long prevTime = 0;
 
 #define receive_pin 2
@@ -71,7 +74,7 @@ int IR_Button;
 #define yellowLED	4
 #define redLED		3
 #define ECHO 		6
-#define TRIG		6
+#define TRIG		5
 
 
 
@@ -90,15 +93,30 @@ void setup() {
 	stp_L2.setSpeed(10);
 	stp_R2.setSpeed(10);
 
+	// Green LED is hardwired to Vcc/gnd
 	pinMode(yellowLED, OUTPUT);
 	pinMode(redLED, OUTPUT);
+	pinMode(ECHO, INPUT);
+	pinMode(TRIG, OUTPUT);
 	
 	irrecv.enableIRIn();
-	Serial.begin(9600);
+	Serial.begin(115200);
+	Serial.print("s1 is ");
+	Serial.println(s1);
+	Serial.print("s2 is ");
+	Serial.println(s2);
+
+	Serial.print("750*(s1/s2) is ");
+	Serial.println(750*(s1/s2));
+	Serial.print("(750*(s1/s2))/3 is ");
+	Serial.println((750*(s1/s2))/3);
+	
+	
 }
 
-long req_steps(long distance);	// Computes the number of stepper steps required for linear distance
+long req_steps(long distance);		// Computes the number of stepper steps required for linear distance
 long rotate_steps(double angle);	// Returns the number of steps to rotate the car about angle.
+double ultrasonic_reading();		// Returns the distance from ultrasonic sensor to object in mm
 
 void loop(){
 	if (irrecv.decode(&results)){
@@ -128,12 +146,6 @@ void loop(){
 			task = TASK3_OBSTACLE;
 			digitalWrite(yellowLED, LOW);
 			digitalWrite(redLED, HIGH);
-			double s1 = PI*(OBSTACLE_RADIUS+AVOID_DISTANCE);
-			double s1 = PI*(OBSTACLE_RADIUS+AVOID_DISTANCE+wheelbase/2);
-			stp_R.setMaxSpeed(750);
-			stp_R.setAcceleration(250);
-			stp_L.setMaxSpeed(750*((s1)/(s2)));
-			stp_L.setAcceleration((750*((s1)/(s2)))/3.0);		// Speed is adjusted so both wheels rotate together.
 			Serial.println("Going to Task 3");
 			break;
 		case IR_FOUR:
@@ -161,31 +173,31 @@ void loop(){
 			break;
 		case TASK1_MANUAL:
 			// Task 1 uses the regular stepper library without implementing acceleration.
-				switch (IR_Button){
-					case FORWARD:
-						for (int i=0; i<req_steps(DistPerButton); i++){
-							stp_L2.step(-1);
-							stp_R2.step(1);
-						}
-						break;
-					case BACKWARDS:
-						for (int i=0; i<req_steps(DistPerButton); i++){
-							stp_L2.step(1);
-							stp_R2.step(-1);
-						}
-						break;
-					case CLOCKWISE:
-						for (int i=0; i<rotate_steps(AnglePerButton); i++){
-							stp_L2.step(-1);
-							stp_R2.step(-1);
-						}
-						break;
-					case COUNTERCLOCKWISE:
-						for (int i=0; i<rotate_steps(AnglePerButton); i++){
-							stp_L2.step(1);
-							stp_R2.step(1);
-						}
-						break;
+			switch (IR_Button){
+				case FORWARD:
+					for (int i=0; i<req_steps(DistPerButton); i++){
+						stp_L2.step(-1);
+						stp_R2.step(1);
+					}
+					break;
+				case BACKWARDS:
+					for (int i=0; i<req_steps(DistPerButton); i++){
+						stp_L2.step(1);
+						stp_R2.step(-1);
+					}
+					break;
+				case CLOCKWISE:
+					for (int i=0; i<rotate_steps(AnglePerButton); i++){
+						stp_L2.step(-1);
+						stp_R2.step(-1);
+					}
+					break;
+				case COUNTERCLOCKWISE:
+					for (int i=0; i<rotate_steps(AnglePerButton); i++){
+						stp_L2.step(1);
+						stp_R2.step(1);
+					}
+					break;
 				}
 			break;
 		case TASK2_AUTO:
@@ -218,14 +230,25 @@ void loop(){
 		case TASK3_OBSTACLE:
 			switch (state){
 				case TASK3_STATE1_FORWARD:
-					stp_L.moveTo(-req_steps(200));		// 12∙L is the length AB for Task 3
-					stp_R.moveTo(req_steps(200));
+					stp_L.moveTo(-req_steps(2*_6L));		// 12∙L is the length AB for Task 3
+					stp_R.moveTo(req_steps(2*_6L));
 					// Condition to stop and move to next state
-					if (ultrasonic_reading() <= AVOID_DISTANCE+wheelbase/2){
-						long currentPos_L = stp_L.currentPosition();
-						long currentPos_R = stp_R.currentPosition();
-						stp_L.moveTo(currentPos_L);
-						stp_R.moveTo(currentPos_R);		// Indicates the final position has been reached
+					distance = ultrasonic_reading();
+					if ((distance <= AVOID_DISTANCE+wheelbase/2) && distance > 0){
+						Serial.println(AVOID_DISTANCE+wheelbase/2);
+						Serial.print("Ultrasonic Reading Distance 2: ");
+ 						Serial.println(distance);
+ 						
+						currentPos_L = stp_L.currentPosition();
+						currentPos_R = stp_R.currentPosition();
+						Serial.print("currentPos_L: ");
+						Serial.println(currentPos_L);
+						Serial.print("currentPos_R: ");
+						Serial.println(currentPos_R);
+						stp_L.moveTo(0);
+						stp_R.moveTo(0);
+						stp_L.setCurrentPosition(0);
+						stp_R.setCurrentPosition(0);		// Indicates the final position has been reached
 					}
 					break;
 				case TASK3_STATE2_ROTATE_RIGHT:
@@ -233,17 +256,26 @@ void loop(){
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK3_STATE3_AVOID:
-					stp_L.moveTo(-req_steps((AVOID_RADIUS-(wheelbase/2))*PI));
-					stp_R.moveTo(req_steps((AVOID_RADIUS+(wheelbase/2))*PI));
+					stp_R.setMaxSpeed(750);
+					stp_R.setAcceleration(250);
+					stp_L.setMaxSpeed(750*(s1/s2));
+					stp_L.setAcceleration((750*(s1/s2))/3);		// Speed is adjusted so both wheels rotate together.
+
+					stp_L.moveTo(-req_steps(s1*PI));
+					stp_R.moveTo(req_steps(s2*PI));
 					break;
 				case TASK3_STATE4_ROTATE_RIGHT:
+					stp_R.setMaxSpeed(750);
+					stp_R.setAcceleration(250);
+					stp_L.setMaxSpeed(750);
+					stp_L.setAcceleration(250);
 					stp_L.moveTo(rotate_steps(-90));
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK3_STATE5_FORWARD:
 					// Need to know how many steps were completed in State 1
 					stp_L.moveTo(-req_steps(2*_6L)-currentPos_L);		// 12L is the total length. CP_L is the steps already taken
-					stp_R.moveTo(req_steps(2*_6L)-currentPos_L);
+					stp_R.moveTo(req_steps(2*_6L)-currentPos_R);
 					break;
 				case TASK3_DONE:
 					task = POWER;
@@ -251,7 +283,7 @@ void loop(){
 			}
 			break;
 		case TASK4_SQUARE:
-			switch(state){
+			switch (state){
 				case TASK4_STATE1_STRAIGHT_FORWARD:
 					stp_L.moveTo(-req_steps(_6L));
 					stp_R.moveTo(req_steps(_6L));
@@ -314,5 +346,5 @@ double ultrasonic_reading(){
 	digitalWrite(TRIG, HIGH);
 	_delay_us(10);
 	digitalWrite(TRIG, LOW);
-	return pulseIn(ECHO, HIGH, 25000)/57.753;
+	return pulseIn(ECHO, HIGH, 1500)/5.7753;		// Timeout at about 260 mm
 }
