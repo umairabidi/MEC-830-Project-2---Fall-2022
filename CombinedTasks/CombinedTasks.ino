@@ -1,7 +1,16 @@
 // Author: Umair Abidi
-// Date of Last Change: November 23 2022
-// Future Changes: n/a
-// High Level Code Description: All 4 Tasks integrated into 1 file
+// Last Changed: November 23 2022
+
+/* Description: The four required tasks are integrated in one file.
+ *  Power button can be pressed at any time to interrupt any motion.
+ *  Choose task using numeric 1-2-3-4 button.
+ *  To control motion in Task 1: Vol+, Vol-, Right, Left
+ *  Tasks 2, 3, 4 are fully autonomous.
+ *  At the end of any task, motors shut off. 
+ *  During movement (or Task 1), red LED turns on indicating imminent movement
+ *  Yellow LED indicates standby: choose task.
+ *  Green LED indicates power is ON.
+ */
 
 #include <AccelStepper.h>
 #include <IRremote.h>
