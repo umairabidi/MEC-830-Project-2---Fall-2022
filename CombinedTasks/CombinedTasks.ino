@@ -1,3 +1,8 @@
+// Author: Umair Abidi
+// Date of Last Change: November 23 2022
+// Future Changes: n/a
+// High Level Code Description: All 4 Tasks integrated into 1 file
+
 #include <AccelStepper.h>
 #include <IRremote.h>
 #include <Stepper.h>
