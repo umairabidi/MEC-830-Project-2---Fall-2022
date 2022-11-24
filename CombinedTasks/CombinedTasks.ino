@@ -68,7 +68,7 @@
 #define s2 (OBSTACLE_RADIUS+AVOID_DISTANCE+wheelbase/2)
 
 #define FULLSTEP 4
-AccelStepper stp_R(FULLSTEP, A0, A2, A1, A3);
+AccelStepper stp_R(FULLSTEP, A0, A2, A1, A3); //The code here is for all the tasks combined. It formulates the working of LEDs and creates four cases for each task by working as the primary code for each of the tasks. 
 AccelStepper stp_L(FULLSTEP, 7, 9, 8, 10);
 Stepper stp_R2(2038, A0, A2, A1, A3);
 Stepper stp_L2(2038, 7, 9, 8, 10);
