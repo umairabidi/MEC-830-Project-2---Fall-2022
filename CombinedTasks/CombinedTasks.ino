@@ -1,5 +1,5 @@
 // Author: Umair Abidi
-// Last Changed: November 23 2022
+// Last Changed: November 27 2022
 
 /* Description: The four required tasks are integrated in one file.
  *  Power button can be pressed at any time to interrupt any motion.
@@ -90,8 +90,6 @@ int IR_Button;
 #define ECHO 		6
 #define TRIG		5
 
-
-
 long req_steps(long distance);
 long rotate_step(double angle);
 double ultrasonic_reading();
@@ -114,16 +112,19 @@ void setup() {
 	pinMode(TRIG, OUTPUT);
 	
 	irrecv.enableIRIn();
+	
 	Serial.begin(115200);
-	Serial.print("s1 is ");
-	Serial.println(s1);
-	Serial.print("s2 is ");
-	Serial.println(s2);
-
-	Serial.print("750*(s1/s2) is ");
-	Serial.println(750*(s1/s2));
-	Serial.print("(750*(s1/s2))/3 is ");
-	Serial.println((750*(s1/s2))/3);
+	
+	// confirming the values are accurate
+//	Serial.print("s1 is ");
+//	Serial.println(s1);
+//	Serial.print("s2 is ");
+//	Serial.println(s2);
+//
+//	Serial.print("750*(s1/s2) is ");
+//	Serial.println(750*(s1/s2));
+//	Serial.print("(750*(s1/s2))/3 is ");
+//	Serial.println((750*(s1/s2))/3);
 	
 	
 }
@@ -249,16 +250,8 @@ void loop(){
 					// Condition to stop and move to next state
 					distance = ultrasonic_reading();
 					if ((distance <= AVOID_DISTANCE+wheelbase/2) && distance > 0){
-						Serial.println(AVOID_DISTANCE+wheelbase/2);
-						Serial.print("Ultrasonic Reading Distance 2: ");
- 						Serial.println(distance);
- 						
 						currentPos_L = stp_L.currentPosition();
 						currentPos_R = stp_R.currentPosition();
-						Serial.print("currentPos_L: ");
-						Serial.println(currentPos_L);
-						Serial.print("currentPos_R: ");
-						Serial.println(currentPos_R);
 						stp_L.moveTo(0);
 						stp_R.moveTo(0);
 						stp_L.setCurrentPosition(0);
@@ -270,10 +263,11 @@ void loop(){
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK3_STATE3_AVOID:
+					// Speed and acceleration is adjusted so both wheels rotate together and stop together.
 					stp_R.setMaxSpeed(750);
 					stp_R.setAcceleration(250);
 					stp_L.setMaxSpeed(750*(s1/s2));
-					stp_L.setAcceleration((750*(s1/s2))/3);		// Speed is adjusted so both wheels rotate together.
+					stp_L.setAcceleration((750*(s1/s2))/3);	
 
 					stp_L.moveTo(-req_steps(s1*PI));
 					stp_R.moveTo(req_steps(s2*PI));
@@ -287,7 +281,6 @@ void loop(){
 					stp_R.moveTo(rotate_steps(-90));
 					break;
 				case TASK3_STATE5_FORWARD:
-					// Need to know how many steps were completed in State 1
 					stp_L.moveTo(-req_steps(2*_6L)-currentPos_L);		// 12L is the total length. CP_L is the steps already taken
 					stp_R.moveTo(req_steps(2*_6L)-currentPos_R);
 					break;
@@ -344,11 +337,12 @@ void loop(){
 		state++;
 	}
 
-	
 	IR_Button = 0;
 }
 
 long req_steps(long distance){
+	// (1.0/wheel_radius)*(32*22*26*31/8910.0)*(16)*(1/3.1415926535)*distance;
+	// RPM → rad/s → linear distance: returns the steps required to go a certain distance
 	return (distance * 12.01258);
 }
 long rotate_steps(double angle){
