@@ -17,10 +17,8 @@ IR_mapping is used to map out the buttons on the infrared remote.
 
 StepperTest is a program used to experiment with the motion of the robot.
 
-The controls of the IRremote has been simplified by coordinating the actions performed by the car to the positioning of the buttons. For example, the 
-forward/backward action is being performed by volume up/down. Similarly, channel change buttons perform the left and right turning actions.
+Initial_code and StepperTest were created to test some basic functions and requirements.
 
-Ultrasonic sensor is used to avoid obstacles and the number of turns are coded into the Arduino to tell the device to turn by 5 degrees each step. This 
-is being accomplished by reducing the speed of left/right tires while the other one stays the same, hence the device receiving its turn.
+Task_1, Task_2, Task_4 contain some early working code for the respective tasks. Task_3 was not completed on its own, and can be found entirely within CombinedTasks.
 
-The manner in which the distances for autonomous naviation for Task 2 and Task 4 were determined by the length of the design itself, so the total amount of steps that an actuator takes is equal to 6 times the length of the design. 
+CombinedTasks is the final code and can perform all four tasks. It contains some calculations that determine the hardcoded paths.
