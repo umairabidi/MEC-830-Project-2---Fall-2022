@@ -136,7 +136,6 @@ double ultrasonic_reading();		// Returns the distance from ultrasonic sensor to 
 void loop(){
 	if (irrecv.decode(&results)){
         Serial.println(results.value,HEX);
-        //Serial.println(results.value);
         irrecv.resume(); 
         IR_Button = results.value;
     }
